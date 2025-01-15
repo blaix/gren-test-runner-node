@@ -6,6 +6,7 @@
     "license": "BSD-3-Clause",
     "version": "5.0.0",
     "exposed-modules": [
+        "Test.Runner.Effectful",
         "Test.Runner.Node",
         "Test.Runner.String"
     ],

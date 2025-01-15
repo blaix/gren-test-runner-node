@@ -1,0 +1,54 @@
+module Test.Runner.Effectful exposing
+    ( Program
+    , run
+    , test
+    , task
+    )
+
+
+import Expect exposing (Expectation)
+import Init
+import Test.Runner.Log as Log
+import Node
+import Random
+import Task exposing (Task)
+import Test exposing (Test)
+import Time
+
+
+type alias Program =
+    Node.SimpleProgram {}
+
+
+run : Array (Task Never Test) -> Program
+run tests =
+    Node.defineSimpleProgram <| \env ->
+        Init.awaitTask Time.now <| \time ->
+            tests
+                |> Task.sequence
+                |> Task.map (Test.describe "TODO: effectful describe")
+                |> Task.andThen
+                    ( Log.runWithOptions
+                        { reportStreamOnPass = env.stdout
+                        , reportStreamOnFail = env.stderr
+                        }
+                        100
+                        (Random.initialSeed (Time.posixToMillis time))
+                    )
+                |> Node.endSimpleProgram
+
+
+test : String -> ({} -> Expectation) -> Task Never Test
+test desc thunk =
+    Task.succeed (Test.test desc thunk)
+
+
+task : Task Never a -> String -> (a -> Expectation) -> Task Never Test
+task subject desc func =
+    subject
+        |> Task.map func
+        |> Task.andThen 
+            (\expect -> 
+                Test.test desc (\_ -> expect)
+                    |> Task.succeed
+            )
